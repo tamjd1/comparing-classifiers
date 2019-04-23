@@ -17,12 +17,12 @@ y_test = None
 
 
 def prepare():
-    with open("semeion.data.txt") as f:
-        reader = csv.reader(f, delimiter=" ")
+    with open("./data/data_banknote_authentication.txt") as f:
+        reader = csv.reader(f)
         rows = [row for row in reader]
         global X, y, X_train, X_test, y_train, y_test
-        X = np.array([[np.float(item) for item in row[:-11]] for row in rows])
-        y = [row[-11:-1].index('1') for row in rows]
+        X = np.array([[np.float(item) for item in row[:-1]] for row in rows])
+        y = [row[-1] for row in rows]
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=750)
 
@@ -50,4 +50,3 @@ def train():
 if __name__ == '__main__':
     prepare()
     train()
-
