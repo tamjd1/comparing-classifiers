@@ -1,6 +1,6 @@
 # comparing-classifiers
 
-###### *Note*: This is still a work in progress... 
+###### __Note__: This is still a work in progress... 
 
 ### Description
 A simple application which trains and tests three classifiers on the same dataset and compares results
