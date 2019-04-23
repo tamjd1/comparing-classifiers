@@ -47,6 +47,11 @@ def train():
     print(score)
 
 
+def test():
+    return
+
+
 if __name__ == '__main__':
     prepare()
     train()
+    test()
