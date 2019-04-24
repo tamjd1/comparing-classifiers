@@ -1,7 +1,7 @@
 import csv
 import numpy as np
 from sklearn.model_selection import train_test_split, RepeatedKFold
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
@@ -78,14 +78,23 @@ def _determine_optimal_gamma_value(k=3):
     return best_gamma_value
 
 
-def train():
+def classify():
     print("\n--- Logistic Regression Classifier ---")
     with Timer() as t:
         logistic_regression = LogisticRegression()
         logistic_regression.fit(X_train, y_train)
-        score = logistic_regression.score(X_train, y_train)
-        print("Score for Logistic Regression classifier: {}".format(score))
+        training_score = logistic_regression.score(X_train, y_train)
+        print("Training accuracy score for Logistic Regression classifier: {}".format(training_score))
     print("Total training time for Logistic Regression classifier: {}".format(t.milliseconds))
+
+    y_pred = logistic_regression.predict(X_test)
+    testing_score = accuracy_score(y_test, y_pred)
+    print("Prediction accuracy score for Logistic Regression classifier: {}".format(testing_score))
+
+    _confusion_matrix = confusion_matrix(y_test, y_pred)
+    print("Confusion matrix for Logistic Regression classifier: \n{}".format(_confusion_matrix))
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     print("\n--- Support Vector Machine Classifier ---")
     gamma = _determine_optimal_gamma_value()
@@ -94,27 +103,38 @@ def train():
         # determined by 3-fold cross validation checks
         svc = SVC(kernel="rbf", gamma=gamma)
         svc.fit(X_train, y_train)
-        score = svc.score(X_train, y_train)
-        print("Score for Support Vector Machine classifier: {}".format(score))
+        training_score = svc.score(X_train, y_train)
+        print("Training accuracy score for Support Vector Machine classifier: {}".format(training_score))
     print("Total training time for Support Vector Machine classifier: {}".format(t.milliseconds))
+
+    y_pred = svc.predict(X_test)
+    testing_score = accuracy_score(y_test, y_pred)
+    print("Prediction accuracy score for Support Vector Machine classifier: {}".format(testing_score))
+
+    _confusion_matrix = confusion_matrix(y_test, y_pred)
+    print("Confusion matrix for Support Vector Machine classifier: \n{}".format(_confusion_matrix))
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     print("\n--- Adaboost Classifier with Naive Bayes base estimator ---")
     with Timer() as t:
         nb = GaussianNB()
         adaboost = AdaBoostClassifier(base_estimator=nb)
-        # adaboost = AdaBoostClassifier(base_estimator=logistic_regression)
-        # adaboost = AdaBoostClassifier()
         adaboost.fit(X_train, y_train)
-        score = adaboost.score(X_train, y_train)
-        print("Score for Adaboost (w/ Naive Bayes) classifier: {}".format(score))
-    print("Total training time for Adaboost (w/ Naive Bayes) classifier: {}".format(t.milliseconds))
+        training_score = adaboost.score(X_train, y_train)
+        print("Training accuracy score for Adaboost classifier: {}".format(training_score))
+    print("Total training time for Adaboost classifier: {}".format(t.milliseconds))
 
+    y_pred = adaboost.predict(X_test)
+    testing_score = accuracy_score(y_test, y_pred)
+    print("Prediction accuracy score for Adaboost classifier: {}".format(testing_score))
 
-def test():
-    return
+    _confusion_matrix = confusion_matrix(y_test, y_pred)
+    print("Confusion matrix for Adaboost classifier: \n{}".format(_confusion_matrix))
+
+    # ------------------------------------------------------------------------------------------------------------------
 
 
 if __name__ == '__main__':
     prepare()
-    train()
-    test()
+    classify()
