@@ -1,11 +1,12 @@
 import csv
 import numpy as np
 from sklearn.model_selection import train_test_split, RepeatedKFold
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
+
 
 from timer import Timer
 
@@ -17,11 +18,12 @@ def _prepare_data(data_file="./data/data_banknote_authentication.txt", training_
 
     :param data_file: path to data file (str, default: "./data/data_banknote_authentication.txt"
     :param training_size: count or percentage of training data points (int, float, default: 750)
-    :return:
+    :return: training and testing data (dict)
         X_train : training features (numpy.ndarray)
         X_test : testing features (numpy.ndarray)
         y_train : training class labels (list)
         y_test : testing class labels (list)
+        y_test_matrix: testing class labels as a matrix of row vectors (numpy.ndarray)
     """
     with open(data_file) as f:
         reader = csv.reader(f)
@@ -31,7 +33,15 @@ def _prepare_data(data_file="./data/data_banknote_authentication.txt", training_
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=training_size)
 
-    return X_train, X_test, y_train, y_test
+    y_test_matrix = np.array([[int(_y == '0'), int(_y == '1')] for _y in y_test])
+
+    return {
+        "X_train": X_train,
+        "y_train": y_train,
+        "X_test": X_test,
+        "y_test": y_test,
+        "y_test_matrix": y_test_matrix
+    }
 
 
 def _determine_optimal_gamma_value(X, y, k=3):
@@ -88,81 +98,96 @@ def _determine_optimal_gamma_value(X, y, k=3):
     return best_gamma_value
 
 
+def _compute_and_draw_roc_curve(y_test, y_scores):
+    """
+    Based on class labels and prediction scores,
+        compute and generate ROC curve
+    :param y_test: matrix of class labels (numpy.ndarray)
+    :param y_scores:  matrix of prediction probability scores (numpy.ndarray)
+    """
+    false_positive_rate = {}
+    true_positive_rate = {}
+
+    for i in range(y_test.shape[1]):
+        false_positive_rate[i], true_positive_rate[i], _ = roc_curve(y_test[:, i], y_scores[:, i])
+
+    # todo : draw curve
+
+
+def _classify(data, classifier):
+    """
+    This function does training and testing of classifier specified on the given data
+        and outputs training and prediction times, training and prediction accuracy,
+        confusion matrix, and ROC curve
+    :param data: training and testing data (dict)
+    :param classifier: model to train and test
+    """
+    X_train = data["X_train"]
+    y_train = data["y_train"]
+    X_test = data["X_test"]
+    y_test = data["y_test"]
+
+    with Timer() as t:
+        classifier.fit(X_train, y_train)
+    print("Total training time: {}".format(t.milliseconds))
+
+    training_score = classifier.score(X_train, y_train)
+    print("Training accuracy score: {}".format(training_score))
+
+    with Timer() as t:
+        y_pred = classifier.predict(X_test)
+    print("Total prediction time: {}".format(t.milliseconds))
+
+    testing_score = accuracy_score(y_test, y_pred)
+    print("Prediction accuracy score: {}".format(testing_score))
+
+    _confusion_matrix = confusion_matrix(y_test, y_pred)
+    print("Confusion matrix: \n{}".format(_confusion_matrix))
+
+    # ROC curve
+    y_test_matrix = data["y_test_matrix"]
+    y_scores_matrix = classifier.predict_proba(X_test)
+    _compute_and_draw_roc_curve(y_test_matrix, y_scores_matrix)
+
+
 def main():
     """
-    Entry point for comparing classifiers
-
-    Compares training time, prediction accuracy, confusion matrices
-        of the following classifiers:
+    Entry point for comparing classifiers:
     1. Logistic Regression
     2. Support Vector Machine
     3. Adaboost with Naive Bayes base estimator
     """
-    X_train, X_test, y_train, y_test = _prepare_data()
+    data = _prepare_data()
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     print("\n--- Logistic Regression Classifier ---")
-    with Timer() as t:
-        logistic_regression = LogisticRegression()
-        logistic_regression.fit(X_train, y_train)
-    print("Total training time for Logistic Regression classifier: {}".format(t.milliseconds))
-
-    training_score = logistic_regression.score(X_train, y_train)
-    print("Training accuracy score for Logistic Regression classifier: {}".format(training_score))
-
-    with Timer() as t:
-        y_pred = logistic_regression.predict(X_test)
-    print("Total prediction time for Logistic Regression classifier: {}".format(t.milliseconds))
-
-    testing_score = accuracy_score(y_test, y_pred)
-    print("Prediction accuracy score for Logistic Regression classifier: {}".format(testing_score))
-
-    _confusion_matrix = confusion_matrix(y_test, y_pred)
-    print("Confusion matrix for Logistic Regression classifier: \n{}".format(_confusion_matrix))
+    logistic_regression = LogisticRegression()
+    _classify(data, logistic_regression)
 
     # ------------------------------------------------------------------------------------------------------------------
 
     print("\n--- Support Vector Machine Classifier ---")
-    gamma = _determine_optimal_gamma_value(X_train, y_train)
-    with Timer() as t:
-        # use Radial Basis Function kernel and gamma value
-        # determined by 3-fold cross validation checks
-        svc = SVC(kernel="rbf", gamma=gamma)
-        svc.fit(X_train, y_train)
-    print("Total training time for Support Vector Machine classifier: {}".format(t.milliseconds))
-
-    training_score = svc.score(X_train, y_train)
-    print("Training accuracy score for Support Vector Machine classifier: {}".format(training_score))
-
-    with Timer() as t:
-        y_pred = svc.predict(X_test)
-    print("Total prediction time for Support Vector Machine classifier: {}".format(t.milliseconds))
-
-    testing_score = accuracy_score(y_test, y_pred)
-    print("Prediction accuracy score for Support Vector Machine classifier: {}".format(testing_score))
-
-    _confusion_matrix = confusion_matrix(y_test, y_pred)
-    print("Confusion matrix for Support Vector Machine classifier: \n{}".format(_confusion_matrix))
+    # Note: gamma value in sklearn.svm is the inverse of the
+    #     standard deviation of the Radial Basis Function kernel
+    #     used as a similarity measure between two points
+    gamma = _determine_optimal_gamma_value(data["X_train"], data["y_train"])
+    svc = SVC(
+        kernel="rbf",  # use Radial Basis Function kernel and gamma value
+        gamma=gamma,  # determined by 3-fold cross validation checks
+        probability=True  # setting this to True may have performance implications
+    )
+    _classify(data, svc)
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    print("\n--- Adaboost Classifier with Naive Bayes base estimator ---")
-    with Timer() as t:
-        nb = GaussianNB()
-        adaboost = AdaBoostClassifier(base_estimator=nb)
-        adaboost.fit(X_train, y_train)
-    print("Total training time for Adaboost classifier: {}".format(t.milliseconds))
-
-    training_score = adaboost.score(X_train, y_train)
-    print("Training accuracy score for Adaboost classifier: {}".format(training_score))
-
-    with Timer() as t:
-        y_pred = adaboost.predict(X_test)
-    print("Total prediction time for Adaboost classifier: {}".format(t.milliseconds))
-    testing_score = accuracy_score(y_test, y_pred)
-    print("Prediction accuracy score for Adaboost classifier: {}".format(testing_score))
-
-    _confusion_matrix = confusion_matrix(y_test, y_pred)
-    print("Confusion matrix for Adaboost classifier: \n{}".format(_confusion_matrix))
+    print("\n--- Adaboost (w/ Naive Bayes base estimator) Classifier ---")
+    # default base estimator is DecisionTreeClassifier, however,
+    # since our data is entirely numeric, Naive Bayes,
+    # or another classifier suitable for numeric data is a better fit
+    nb = GaussianNB()
+    adaboost = AdaBoostClassifier(base_estimator=nb)
+    _classify(data, adaboost)
 
     # ------------------------------------------------------------------------------------------------------------------
 
