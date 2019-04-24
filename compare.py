@@ -109,7 +109,10 @@ def main():
     training_score = logistic_regression.score(X_train, y_train)
     print("Training accuracy score for Logistic Regression classifier: {}".format(training_score))
 
-    y_pred = logistic_regression.predict(X_test)
+    with Timer() as t:
+        y_pred = logistic_regression.predict(X_test)
+    print("Total prediction time for Logistic Regression classifier: {}".format(t.milliseconds))
+
     testing_score = accuracy_score(y_test, y_pred)
     print("Prediction accuracy score for Logistic Regression classifier: {}".format(testing_score))
 
@@ -130,7 +133,10 @@ def main():
     training_score = svc.score(X_train, y_train)
     print("Training accuracy score for Support Vector Machine classifier: {}".format(training_score))
 
-    y_pred = svc.predict(X_test)
+    with Timer() as t:
+        y_pred = svc.predict(X_test)
+    print("Total prediction time for Support Vector Machine classifier: {}".format(t.milliseconds))
+
     testing_score = accuracy_score(y_test, y_pred)
     print("Prediction accuracy score for Support Vector Machine classifier: {}".format(testing_score))
 
@@ -149,7 +155,9 @@ def main():
     training_score = adaboost.score(X_train, y_train)
     print("Training accuracy score for Adaboost classifier: {}".format(training_score))
 
-    y_pred = adaboost.predict(X_test)
+    with Timer() as t:
+        y_pred = adaboost.predict(X_test)
+    print("Total prediction time for Adaboost classifier: {}".format(t.milliseconds))
     testing_score = accuracy_score(y_test, y_pred)
     print("Prediction accuracy score for Adaboost classifier: {}".format(testing_score))
 
