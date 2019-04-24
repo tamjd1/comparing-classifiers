@@ -83,9 +83,10 @@ def classify():
     with Timer() as t:
         logistic_regression = LogisticRegression()
         logistic_regression.fit(X_train, y_train)
-        training_score = logistic_regression.score(X_train, y_train)
-        print("Training accuracy score for Logistic Regression classifier: {}".format(training_score))
     print("Total training time for Logistic Regression classifier: {}".format(t.milliseconds))
+
+    training_score = logistic_regression.score(X_train, y_train)
+    print("Training accuracy score for Logistic Regression classifier: {}".format(training_score))
 
     y_pred = logistic_regression.predict(X_test)
     testing_score = accuracy_score(y_test, y_pred)
@@ -103,9 +104,10 @@ def classify():
         # determined by 3-fold cross validation checks
         svc = SVC(kernel="rbf", gamma=gamma)
         svc.fit(X_train, y_train)
-        training_score = svc.score(X_train, y_train)
-        print("Training accuracy score for Support Vector Machine classifier: {}".format(training_score))
     print("Total training time for Support Vector Machine classifier: {}".format(t.milliseconds))
+
+    training_score = svc.score(X_train, y_train)
+    print("Training accuracy score for Support Vector Machine classifier: {}".format(training_score))
 
     y_pred = svc.predict(X_test)
     testing_score = accuracy_score(y_test, y_pred)
@@ -121,9 +123,10 @@ def classify():
         nb = GaussianNB()
         adaboost = AdaBoostClassifier(base_estimator=nb)
         adaboost.fit(X_train, y_train)
-        training_score = adaboost.score(X_train, y_train)
-        print("Training accuracy score for Adaboost classifier: {}".format(training_score))
     print("Total training time for Adaboost classifier: {}".format(t.milliseconds))
+
+    training_score = adaboost.score(X_train, y_train)
+    print("Training accuracy score for Adaboost classifier: {}".format(training_score))
 
     y_pred = adaboost.predict(X_test)
     testing_score = accuracy_score(y_test, y_pred)
