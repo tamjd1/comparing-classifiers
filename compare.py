@@ -196,7 +196,7 @@ def main():
     #     used as a similarity measure between two points
     gamma = _determine_optimal_gamma_value(data["X_train"], data["y_train"])
     svc = SVC(
-        kernel="rbf",  # use Radial Basis Function kernel and gamma value
+        kernel="rbf",  # use Radial Basis Function kernel
         gamma=gamma,  # determined by 3-fold cross validation checks
         probability=True  # setting this to True may have performance implications
     )
