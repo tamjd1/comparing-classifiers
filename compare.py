@@ -6,7 +6,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
-
+import matplotlib.pyplot as plt
+from itertools import cycle
 
 from timer import Timer
 
@@ -98,29 +99,51 @@ def _determine_optimal_gamma_value(X, y, k=3):
     return best_gamma_value
 
 
-def _compute_and_draw_roc_curve(y_test, y_scores):
+def _compute_and_draw_roc_curve(y_test, y_scores, classifier_name):
     """
     Based on class labels and prediction scores,
         compute and generate ROC curve
     :param y_test: matrix of class labels (numpy.ndarray)
     :param y_scores:  matrix of prediction probability scores (numpy.ndarray)
+    :param classifier_name: classifier name for labelling (str)
     """
     false_positive_rate = {}
     true_positive_rate = {}
 
     for i in range(y_test.shape[1]):
-        false_positive_rate[i], true_positive_rate[i], _ = roc_curve(y_test[:, i], y_scores[:, i])
+        false_positive_rate[i], true_positive_rate[i], _ = roc_curve(y_test[:, i], y_scores[:, i], drop_intermediate=False)
 
-    # todo : draw curve
+    # Plot all ROC curves
+    plt.figure()
+
+    colors = cycle(['aqua', 'darkorange'])
+    for i, color in zip(range(2), colors):
+        plt.plot(
+            false_positive_rate[i],
+            true_positive_rate[i],
+            color=color,
+            lw=2,
+            label='Class {}'.format(i)
+        )
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=2)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('{} Classifier ROC Curves'.format(classifier_name))
+    plt.legend(loc="lower right")
+    plt.show()
 
 
-def _classify(data, classifier):
+def _classify(data, classifier, name):
     """
     This function does training and testing of classifier specified on the given data
         and outputs training and prediction times, training and prediction accuracy,
         confusion matrix, and ROC curve
     :param data: training and testing data (dict)
     :param classifier: model to train and test
+    :param name: classifier name (str)
     """
     X_train = data["X_train"]
     y_train = data["y_train"]
@@ -147,7 +170,7 @@ def _classify(data, classifier):
     # ROC curve
     y_test_matrix = data["y_test_matrix"]
     y_scores_matrix = classifier.predict_proba(X_test)
-    _compute_and_draw_roc_curve(y_test_matrix, y_scores_matrix)
+    _compute_and_draw_roc_curve(y_test_matrix, y_scores_matrix, name)
 
 
 def main():
@@ -163,7 +186,7 @@ def main():
 
     print("\n--- Logistic Regression Classifier ---")
     logistic_regression = LogisticRegression()
-    _classify(data, logistic_regression)
+    _classify(data, logistic_regression, "Logistic Regression")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -177,7 +200,7 @@ def main():
         gamma=gamma,  # determined by 3-fold cross validation checks
         probability=True  # setting this to True may have performance implications
     )
-    _classify(data, svc)
+    _classify(data, svc, "Support Vector Machine")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -187,7 +210,7 @@ def main():
     # or another classifier suitable for numeric data is a better fit
     nb = GaussianNB()
     adaboost = AdaBoostClassifier(base_estimator=nb)
-    _classify(data, adaboost)
+    _classify(data, adaboost, "Adaboost (w/ Naive Bayes base estimator)")
 
     # ------------------------------------------------------------------------------------------------------------------
 
